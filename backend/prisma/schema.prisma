@@ -1,11 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -18,8 +12,8 @@ model User {
   name        String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  collections Collection[]
   bookmarks   Bookmark[]
+  collections Collection[]
 }
 
 model Collection {
@@ -28,8 +22,8 @@ model Collection {
   ownerId   String
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  owner     User       @relation(fields: [ownerId], references: [id])
   bookmarks Bookmark[]
+  owner     User       @relation(fields: [ownerId], references: [id])
 
   @@index([ownerId])
 }
@@ -43,8 +37,8 @@ model Bookmark {
   ownerId      String
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  collection   Collection? @relation(fields: [collectionId], references: [id])
   owner        User        @relation(fields: [ownerId], references: [id])
-  collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
   @@index([ownerId, collectionId])

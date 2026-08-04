@@ -10,6 +10,7 @@ import { AUTH0_API_AUDIENCE, AUTH0_DISCOVERY_URL } from './auth.constants';
 type Auth0DiscoveryDocument = {
   issuer: string;
   jwks_uri: string;
+  userinfo_endpoint?: string;
 };
 
 export type VerifiedAccessTokenPayload = JWTPayload & {
@@ -41,7 +42,7 @@ export class AuthService {
     }
   }
 
-  private async getDiscoveryDocument(): Promise<Auth0DiscoveryDocument> {
+  async getDiscoveryDocument(): Promise<Auth0DiscoveryDocument> {
     if (!this.discoveryDocumentPromise) {
       this.discoveryDocumentPromise = this.fetchDiscoveryDocument();
     }
@@ -77,6 +78,7 @@ export class AuthService {
     return {
       issuer: body.issuer,
       jwks_uri: body.jwks_uri,
+      userinfo_endpoint: body.userinfo_endpoint,
     };
   }
 }
