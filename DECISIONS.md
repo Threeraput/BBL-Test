@@ -38,3 +38,64 @@ Use **jose** (npm:jose v6+) as the JWT validation library with `createRemoteJWKS
 - `backend/src/auth/auth.guard.ts` — NestJS integration
 - `backend/src/auth/auth.service.spec.ts` — 5 unit tests (4 mocked, 1 real)
 - See [API_DESIGN.md](API_DESIGN.md) for full technical details
+
+
+## AuthController is empty; /me lives in UsersController
+
+**Context:** With Authorization Code + PKCE, the frontend drives login and
+token exchange directly against Auth0 — no client secret to protect, so
+there's no backend callback/token/logout route to build.
+**Decision:** AuthController has zero routes. Auth-related backend logic
+lives only in AuthGuard (cross-cutting token validation, applied via
+@UseGuards across modules) and AuthService (JWT verification). The /me
+endpoint lives in UsersController since it returns a user resource, not
+an auth operation.
+**Trade-off:** None functionally — kept AuthModule/AuthController as a
+module boundary for clarity and possible future extension (e.g. a
+session-invalidation route) rather than deleting it outright.
+
+## Email/name claim source for /me
+**Context:** Uncertain whether the Auth0 access token for this tenant
+includes `email`/`name` claims directly, without blocking on manually
+verifying via PKCE flow before the frontend exists.
+**Decision:** Implemented defensively — check token payload first, fall
+back to calling the /userinfo endpoint with the access token if profile
+claims are absent. Verified end-to-end once the frontend PKCE flow was
+built (see commit <fill in later>).
+**Trade-off:** One extra network call on first login if the fallback path
+is the one actually used; negligible for this app's scale.
+
+## userinfo_endpoint discovery (no hardcoding)
+
+**Context:** When falling back to /userinfo for email/name claims, we
+need the endpoint URL. Could hardcode `https://dev-yg.us.auth0.com/userinfo`
+or fetch it dynamically from the discovery document.
+
+**Decision:** Fetch `userinfo_endpoint` from Auth0's discovery document
+(already fetched in `AuthService.getDiscoveryDocument()`). Never hardcode
+the endpoint URL.
+
+**Rationale:**
+1. **Tenant flexibility** — A different Auth0 tenant might have a different
+   userinfo_endpoint URL. The discovery document is the tenant's source
+   of truth.
+2. **Automatic updates** — If Auth0 ever relocates the endpoint (unlikely
+   but possible during infrastructure migrations), we pick it up without
+   code changes.
+3. **Defense-in-depth** — Aligns with earlier decision to fetch discovery
+   live rather than hardcoding JWKS URI. Keeps all tenant config in one
+   place.
+
+**Trade-offs:**
+- **Pro:** Resilient to Auth0 tenant config changes
+- **Con:** Requires AuthService to expose `getDiscoveryDocument()` public
+  method (so UsersService can call it)
+- **Pro:** Single discovery document call on app startup; discovery is
+  cached, so UsersService.upsertFromToken doesn't re-fetch it per login
+
+**Related Files:**
+- `backend/src/auth/auth.service.ts` — `getDiscoveryDocument()` public method
+- `backend/src/users/users.service.ts` — Calls `authService.getDiscoveryDocument().userinfo_endpoint`
+- `backend/prisma/schema.prisma` — Updated generator to "prisma-client-js"
+  (standard output location for TypeScript builds)
+

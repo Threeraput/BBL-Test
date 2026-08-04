@@ -98,6 +98,59 @@ Every endpoint that touches user data (`Collections`, `Bookmarks`) **must**:
 
 This ensures the privacy invariant: *a user can never see, modify, or learn of another user's data*.
 
+---
+
+## User Provisioning: GET /me
+
+### Overview
+
+When a user logs in via Auth0's Authorization Code + PKCE flow (frontend-driven), they get an access token. The first time they call any API endpoint, the `/me` endpoint auto-provisions them in our database.
+
+### Endpoint
+
+**GET /users/me**
+
+- Required: `Authorization: Bearer {access_token}` header
+- Decorators: `@UseGuards(AuthGuard)`, `@Get('me')`
+- Response: `{ id: string, email: string, name: string | null, createdAt: Date, updatedAt: Date }`
+
+### User Provisioning Flow
+
+1. Client sends `GET /users/me` with valid access token
+2. AuthGuard validates token → attaches `request.auth = { subject, payload, token }`
+3. UsersController calls `UsersService.upsertFromToken(payload, rawAccessToken)`
+4. Service extracts email/name:
+   - **Path A (fast):** Check `payload.email` and `payload.name` — if present, use directly
+   - **Path B (fallback):** If either claim missing, call Auth0's `/userinfo` endpoint with the access token
+5. Upsert User record (keyed by `sub` claim) with email and name
+6. Return user object
+7. Console logs which path was used (payload direct vs /userinfo fallback)
+
+### Why Defensive Email/Name Extraction?
+
+We don't know in advance whether this Auth0 tenant's access token includes profile claims (`email`, `name`).
+
+- **If included:** Fast path — use payload claims directly (no extra network call)
+- **If missing:** Fallback path — call `/userinfo` endpoint to fetch them
+
+The implementation handles both cases, and console logging shows which path actually occurs in production. This lets us verify the assumption without code changes.
+
+### Why Fetch /userinfo Endpoint URL from Discovery Document?
+
+The `/userinfo` endpoint URL could be hardcoded (`https://dev-yg.us.auth0.com/userinfo`), but we instead fetch it from the cached discovery document:
+
+- **Tenant flexibility** — A different Auth0 tenant might have a different URL
+- **Automatic updates** — If Auth0 relocates the endpoint, we pick it up via discovery
+- **Defense-in-depth** — Aligns with the discovery-driven approach for JWKS; tenant config lives in one place
+
+### Implementation Files
+
+- `backend/src/users/users.service.ts` — `upsertFromToken(payload, rawAccessToken)` with dual-path email/name extraction
+- `backend/src/users/users.controller.ts` — GET /me endpoint with AuthGuard
+- `backend/src/users/users.module.ts` — Module registration, imports AuthModule
+- `backend/src/prisma.service.ts` — PrismaClient singleton
+- `backend/src/app.module.ts` — Imports UsersModule
+
 See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the full invariant definition.
 
 ---
