@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { type AuthenticatedRequest } from '../auth/auth.types';
+import { BookmarksService } from '../bookmarks/bookmarks.service';
 import { CollectionsService } from './collections.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { PatchCollectionDto, UpdateCollectionDto } from './dto/update-collection.dto';
@@ -20,7 +21,10 @@ import { PatchCollectionDto, UpdateCollectionDto } from './dto/update-collection
 @UseGuards(AuthGuard)
 @Controller('collections')
 export class CollectionsController {
-  constructor(private readonly collectionsService: CollectionsService) {}
+  constructor(
+    private readonly collectionsService: CollectionsService,
+    private readonly bookmarksService: BookmarksService,
+  ) {}
 
   @Get()
   list(@Req() req: AuthenticatedRequest) {
@@ -53,6 +57,14 @@ export class CollectionsController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.collectionsService.patch(id, req.auth!.subject, dto);
+  }
+
+  @Get(':id/bookmarks')
+  listBookmarks(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    // Verify collection ownership then filter bookmarks by both ownerId and collectionId
+    return this.collectionsService.getOne(id, req.auth!.subject).then(() =>
+      this.bookmarksService.list(req.auth!.subject, id),
+    );
   }
 
   @Delete(':id')

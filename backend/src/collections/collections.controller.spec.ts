@@ -4,6 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { type AuthenticatedRequest } from '../auth/auth.types';
+import { BookmarksService } from '../bookmarks/bookmarks.service';
 import { CollectionsController } from './collections.controller';
 import { CollectionsService } from './collections.service';
 
@@ -23,11 +24,14 @@ const mockCollection = {
 const mockPayload = { iss: 'https://dev-yg.us.auth0.com/', sub: OWNER_A, aud: 'https://bbl-candidate-test-api' };
 
 // Build app with real AuthGuard but stubbed AuthService — for unauthenticated tests
+const emptyBookmarksSvc = (): Partial<BookmarksService> => ({ list: jest.fn() });
+
 async function buildHttpApp(serviceOverrides: Partial<CollectionsService> = {}): Promise<INestApplication> {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [CollectionsController],
     providers: [
       { provide: CollectionsService, useValue: { list: jest.fn(), getOne: jest.fn(), create: jest.fn(), replace: jest.fn(), patch: jest.fn(), remove: jest.fn(), ...serviceOverrides } },
+      { provide: BookmarksService, useValue: emptyBookmarksSvc() },
       { provide: AuthService, useValue: { verifyAccessToken: jest.fn().mockRejectedValue(new Error('no token')) } },
       AuthGuard,
     ],
@@ -44,6 +48,7 @@ async function buildControllerModule(serviceOverrides: Partial<CollectionsServic
     controllers: [CollectionsController],
     providers: [
       { provide: CollectionsService, useValue: { list: jest.fn(), getOne: jest.fn(), create: jest.fn(), replace: jest.fn(), patch: jest.fn(), remove: jest.fn(), ...serviceOverrides } },
+      { provide: BookmarksService, useValue: emptyBookmarksSvc() },
     ],
   })
     .overrideGuard(AuthGuard)
