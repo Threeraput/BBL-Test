@@ -26,7 +26,9 @@ const makePrisma = (overrides: Partial<Record<string, jest.Mock>> = {}) => {
     update: jest.fn().mockResolvedValue(mockBookmark),
     delete: jest.fn().mockResolvedValue(mockBookmark),
   };
-  return { bookmark: { ...defaults, ...overrides } } as unknown as PrismaService;
+  return {
+    bookmark: { ...defaults, ...overrides },
+  } as unknown as PrismaService;
 };
 
 describe('BookmarksService — happy path', () => {

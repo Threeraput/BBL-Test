@@ -1,14 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
-import {
-  createRemoteJWKSet,
-  jwtVerify,
-  type JWTVerifyResult,
-} from 'jose';
+import { createRemoteJWKSet, jwtVerify, type JWTVerifyResult } from 'jose';
 import { AUTH0_API_AUDIENCE } from './auth.constants';
-import {
-  AuthService,
-  type VerifiedAccessTokenPayload,
-} from './auth.service';
+import { AuthService, type VerifiedAccessTokenPayload } from './auth.service';
 
 jest.mock('jose');
 
@@ -28,7 +21,7 @@ const discoveryDocument: DiscoveryDocument = {
 const createDiscoveryResponse = (body: DiscoveryDocument): Response =>
   ({
     ok: true,
-    json: async () => body,
+    json: () => Promise.resolve(body),
   }) as Response;
 
 const verifiedPayload: JWTVerifyResult<VerifiedAccessTokenPayload> = {
@@ -57,7 +50,7 @@ describe('AuthService (unit tests with mocks)', () => {
     mockedJwtVerify.mockReset();
 
     mockedCreateRemoteJwkSet.mockReturnValue(
-      jest.fn() as ReturnType<typeof createRemoteJWKSet>,
+      jest.fn() as unknown as ReturnType<typeof createRemoteJWKSet>,
     );
   });
 
@@ -115,7 +108,8 @@ describe('AuthService (unit tests with mocks)', () => {
   });
 
   it('should return the verified payload when the token is valid', async () => {
-    mockedJwtVerify.mockResolvedValueOnce(verifiedPayload);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedJwtVerify.mockResolvedValueOnce(verifiedPayload as any);
 
     const result = await service.verifyAccessToken('valid-token');
 

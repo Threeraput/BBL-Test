@@ -25,7 +25,9 @@ const mockBookmark = {
 };
 
 const emptyService = (): Partial<BookmarksService> => ({
-  list: jest.fn(), getOne: jest.fn(), create: jest.fn(),
+  list: jest.fn(),
+  getOne: jest.fn(),
+  create: jest.fn(),
   replace: jest.fn(), patch: jest.fn(), remove: jest.fn(),
 });
 
