@@ -158,3 +158,14 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the f
 ## Decisions
 
 All design decisions are logged in [DECISIONS.md](DECISIONS.md).
+
+
+
+### IDOR via collectionId on bookmark create/update
+
+**Found by:** security-reviewer chat mode, cross-resource review pass
+**What was wrong:** Bookmark create/update checked ownership of the
+bookmark itself but not of the referenced collectionId. A user could
+attach their own bookmark to another user's collection by supplying
+that collection's id in the request body.
+**Fix commit:** <hash>

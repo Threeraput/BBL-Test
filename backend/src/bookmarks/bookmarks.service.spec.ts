@@ -18,16 +18,24 @@ const mockBookmark = {
   updatedAt: new Date(),
 };
 
-const makePrisma = (overrides: Partial<Record<string, jest.Mock>> = {}) => {
-  const defaults = {
+const makePrisma = (
+  bookmarkOverrides: Partial<Record<string, jest.Mock>> = {},
+  collectionOverrides: Partial<Record<string, jest.Mock>> = {},
+) => {
+  const bookmarkDefaults = {
     findMany: jest.fn().mockResolvedValue([mockBookmark]),
     findFirst: jest.fn().mockResolvedValue(mockBookmark),
     create: jest.fn().mockResolvedValue(mockBookmark),
     update: jest.fn().mockResolvedValue(mockBookmark),
     delete: jest.fn().mockResolvedValue(mockBookmark),
   };
+  const collectionDefaults = {
+    // default: collection exists and belongs to caller
+    findFirst: jest.fn().mockResolvedValue({ id: COL_ID, ownerId: OWNER_A }),
+  };
   return {
-    bookmark: { ...defaults, ...overrides },
+    bookmark: { ...bookmarkDefaults, ...bookmarkOverrides },
+    collection: { ...collectionDefaults, ...collectionOverrides },
   } as unknown as PrismaService;
 };
 
@@ -127,5 +135,51 @@ describe('BookmarksService — adversarial (owner B tries to access owner A data
   it('remove throws 404 when ownerId does not match', async () => {
     const service = new BookmarksService(prismaNotFound);
     await expect(service.remove(BM_ID, OWNER_B)).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('BookmarksService — cross-resource IDOR via collectionId', () => {
+  const colNotOwned = jest.fn().mockResolvedValue(null);
+  const colOwned = jest.fn().mockResolvedValue({ id: COL_ID, ownerId: OWNER_A });
+
+  it('create with another user\'s collectionId throws 404', async () => {
+    const prisma = makePrisma({}, { findFirst: colNotOwned });
+    const service = new BookmarksService(prisma);
+    await expect(
+      service.create(OWNER_A, { url: 'https://x.com', title: 'X', collectionId: 'other-col' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.bookmark.create).not.toHaveBeenCalled();
+  });
+
+  it('patch changing collectionId to another user\'s collection throws 404', async () => {
+    const prisma = makePrisma({}, { findFirst: colNotOwned });
+    const service = new BookmarksService(prisma);
+    await expect(
+      service.patch(BM_ID, OWNER_A, { collectionId: 'other-col' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.bookmark.update).not.toHaveBeenCalled();
+  });
+
+  it('create with own collectionId succeeds (regression)', async () => {
+    const prisma = makePrisma({}, { findFirst: colOwned });
+    const service = new BookmarksService(prisma);
+    await service.create(OWNER_A, { url: 'https://x.com', title: 'X', collectionId: COL_ID });
+    expect(prisma.bookmark.create).toHaveBeenCalled();
+  });
+
+  it('patch with own collectionId succeeds (regression)', async () => {
+    const prisma = makePrisma({}, { findFirst: colOwned });
+    const service = new BookmarksService(prisma);
+    await service.patch(BM_ID, OWNER_A, { collectionId: COL_ID });
+    expect(prisma.bookmark.update).toHaveBeenCalled();
+  });
+
+  it('create without collectionId skips ownership check', async () => {
+    const collectionFindFirst = jest.fn();
+    const prisma = makePrisma({}, { findFirst: collectionFindFirst });
+    const service = new BookmarksService(prisma);
+    await service.create(OWNER_A, { url: 'https://x.com', title: 'X' });
+    expect(collectionFindFirst).not.toHaveBeenCalled();
+    expect(prisma.bookmark.create).toHaveBeenCalled();
   });
 });

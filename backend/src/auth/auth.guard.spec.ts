@@ -48,4 +48,18 @@ describe('AuthGuard', () => {
     );
     expect(verifyAccessToken).not.toHaveBeenCalled();
   });
+
+  it('should attach auth to request and return true for a valid Bearer token', async () => {
+    const payload = { iss: 'https://dev-yg.us.auth0.com/', sub: 'user-1', aud: 'https://bbl-candidate-test-api' };
+    verifyAccessToken.mockResolvedValueOnce({ payload, protectedHeader: { alg: 'RS256' } });
+
+    const request: Partial<AuthenticatedRequest> = { headers: { authorization: 'Bearer valid-token' } };
+    const context = createExecutionContext(request);
+
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(request.auth).toEqual({ token: 'valid-token', subject: 'user-1', payload });
+    expect(verifyAccessToken).toHaveBeenCalledWith('valid-token');
+  });
 });

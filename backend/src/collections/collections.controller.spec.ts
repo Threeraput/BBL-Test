@@ -43,12 +43,15 @@ async function buildHttpApp(serviceOverrides: Partial<CollectionsService> = {}):
 }
 
 // Build controller directly (guard bypassed) — for happy-path unit tests
-async function buildControllerModule(serviceOverrides: Partial<CollectionsService> = {}) {
+async function buildControllerModule(
+  serviceOverrides: Partial<CollectionsService> = {},
+  bookmarksOverrides: Partial<BookmarksService> = {},
+) {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [CollectionsController],
     providers: [
       { provide: CollectionsService, useValue: { list: jest.fn(), getOne: jest.fn(), create: jest.fn(), replace: jest.fn(), patch: jest.fn(), remove: jest.fn(), ...serviceOverrides } },
-      { provide: BookmarksService, useValue: emptyBookmarksSvc() },
+      { provide: BookmarksService, useValue: { ...emptyBookmarksSvc(), ...bookmarksOverrides } },
     ],
   })
     .overrideGuard(AuthGuard)
@@ -104,6 +107,21 @@ describe('CollectionsController — happy path', () => {
     const ctrl = await buildControllerModule({ remove });
     await ctrl.remove('col-1', makeRequest());
     expect(remove).toHaveBeenCalledWith('col-1', OWNER_A);
+  });
+
+  it('listBookmarks verifies collection ownership then lists bookmarks filtered by collectionId', async () => {
+    const getOne = jest.fn().mockResolvedValue(mockCollection);
+    const list = jest.fn().mockResolvedValue([]);
+    const ctrl = await buildControllerModule({ getOne }, { list });
+    await ctrl.listBookmarks('col-1', makeRequest());
+    expect(getOne).toHaveBeenCalledWith('col-1', OWNER_A);
+    expect(list).toHaveBeenCalledWith(OWNER_A, 'col-1');
+  });
+
+  it('listBookmarks returns 404 when collection belongs to another user', async () => {
+    const getOne = jest.fn().mockRejectedValue(new NotFoundException());
+    const ctrl = await buildControllerModule({ getOne });
+    await expect(ctrl.listBookmarks('col-1', makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 

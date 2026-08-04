@@ -117,6 +117,25 @@ describe('UsersService', () => {
     });
   });
 
+  describe('payload มี email แต่ไม่มี name', () => {
+    it('เรียก /userinfo เพื่อดึง name แล้ว merge กับ email จาก payload', async () => {
+      const payload = makePayload({ email: 'from-payload@example.com' }); // มี email แต่ไม่มี name
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ sub: 'google-oauth2|123', email: 'ignored@example.com', name: 'From UserInfo' }),
+      } as Response);
+
+      await service.upsertFromToken(payload, 'raw-token');
+
+      expect(upsert).toHaveBeenCalledWith({
+        where: { id: 'google-oauth2|123' },
+        update: { email: 'from-payload@example.com', name: 'From UserInfo' },
+        create: { id: 'google-oauth2|123', email: 'from-payload@example.com', name: 'From UserInfo' },
+      });
+    });
+  });
+
   describe('upsert ซ้ำด้วย sub เดิม', () => {
     it('เรียก prisma.upsert ครั้งที่ 2 ด้วย sub เดิม ต้อง update ไม่สร้างใหม่', async () => {
       const payload = makePayload({ email: 'user@example.com', name: 'Test User' });

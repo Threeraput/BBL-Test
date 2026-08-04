@@ -7,6 +7,14 @@ import { PatchBookmarkDto, UpdateBookmarkDto } from './dto/update-bookmark.dto';
 export class BookmarksService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Throws 404 if collectionId is not owned by caller — prevents cross-user collection assignment
+  private async assertCollectionOwner(collectionId: string, ownerId: string) {
+    const col = await this.prisma.collection.findFirst({
+      where: { id: collectionId, ownerId },
+    });
+    if (!col) throw new NotFoundException();
+  }
+
   list(ownerId: string, collectionId?: string) {
     return this.prisma.bookmark.findMany({
       where: {
@@ -25,7 +33,8 @@ export class BookmarksService {
     return bookmark;
   }
 
-  create(ownerId: string, dto: CreateBookmarkDto) {
+  async create(ownerId: string, dto: CreateBookmarkDto) {
+    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.create({
       data: {
         url: dto.url,
@@ -39,6 +48,7 @@ export class BookmarksService {
 
   async replace(id: string, ownerId: string, dto: UpdateBookmarkDto) {
     await this.getOne(id, ownerId);
+    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.update({
       where: { id },
       data: {
@@ -52,6 +62,7 @@ export class BookmarksService {
 
   async patch(id: string, ownerId: string, dto: PatchBookmarkDto) {
     await this.getOne(id, ownerId);
+    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.update({
       where: { id },
       data: {

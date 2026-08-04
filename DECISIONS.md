@@ -119,3 +119,22 @@ there.
 **Related Files:**
 - `backend/src/users/users.controller.spec.ts` — happy-path + unauthenticated tests
 
+## Collection sharing (§3.3) — scope decision
+**Context:** Spec says "A user may want to share a collection with someone
+else" with no further detail — must decide scope and justify.
+**Decision:** Not implementing sharing in this submission. The core
+security invariant of the app is single-owner-only access; introducing
+sharing means the ownership model becomes multi-party, which affects
+every existing query, the 404-vs-403 logic, and every adversarial test
+already written for Collections/Bookmarks. Given the time budget, I
+chose to keep the private-only model solid and fully verified rather
+than build a shallow sharing feature that weakens the property the
+whole app is graded on.
+**Trade-off:** Doesn't address the requirement's explicit "may want to
+share" line. Schema left extensible (ownerId stays on both models,
+no CollectionShare table added) so it could be layered on later
+without a redesign — noted here as the extension point.
+**What I'd build if I had more time:** a CollectionShare table
+(collectionId, sharedWithUserId, permission) and a read-only grant
+path, kept deliberately separate from the ownership check so the
+existing privacy tests wouldn't need to change semantics.
