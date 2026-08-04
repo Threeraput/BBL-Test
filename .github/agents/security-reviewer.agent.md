@@ -1,5 +1,4 @@
 ---
-name: Security Reviewer
 description: Review auth, ownership enforcement, privacy leaks, and missing adversarial tests in the BBL bookmark manager.
 tools:
 	- read_file
@@ -65,5 +64,5 @@ Output format:
 
 Review discipline:
 - Do not claim a flow is secure unless you found the enforcing code path or a passing test that proves it.
-- Do not accept “probably protected by relation” as sufficient for user-owned data; require an explicit owner scope in the relevant access path.
+- Do not accept "probably protected by relation" as sufficient for user-owned data; require an explicit owner scope in the relevant access path.
 - If the repo is incomplete, distinguish between implemented protections, unverified assumptions, and missing work.
