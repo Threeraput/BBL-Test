@@ -99,3 +99,23 @@ the endpoint URL.
 - `backend/prisma/schema.prisma` — Updated generator to "prisma-client-js"
   (standard output location for TypeScript builds)
 
+## GET /me has no adversarial test (by design)
+
+**Context:** The spec requires three test types for every endpoint: happy-path,
+adversarial (user B accesses user A's resource by id), and unauthenticated.
+
+**Decision:** `GET /me` does not have an adversarial test, and this is intentional.
+The endpoint takes no resource id from the caller — it always resolves the
+authenticated user from the Bearer token's `sub` claim. There is no parameter
+for a second user to manipulate in order to access another user's data.
+
+**Trade-off:** No trade-off. The absence of an adversarial test is not a gap
+in coverage; it reflects that the attack surface does not exist for this endpoint.
+The ownership invariant is enforced structurally (endpoint is self-scoped), not
+by a runtime `ownerId` filter. The adversarial test requirement applies to
+endpoints that accept a resource id (collections, bookmarks) — those are tested
+there.
+
+**Related Files:**
+- `backend/src/users/users.controller.spec.ts` — happy-path + unauthenticated tests
+
