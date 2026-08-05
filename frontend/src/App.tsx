@@ -34,8 +34,6 @@ const ProtectedRoute = () => {
 };
 
 const AppRoutes = () => {
-  const { getAccessTokenSilently } = useAuth0();
-
   const router = useMemo(() => createBrowserRouter([
     {
       path: '/login',
@@ -55,15 +53,15 @@ const AppRoutes = () => {
         },
         {
           path: 'collections',
-          element: <CollectionsPage getAccessTokenSilently={getAccessTokenSilently} />,
+          element: <CollectionsPage />,
         },
         {
           path: 'bookmarks',
-          element: <BookmarksPage getAccessTokenSilently={getAccessTokenSilently} />,
+          element: <BookmarksPage />,
         },
       ],
     },
-  ]), [getAccessTokenSilently]);
+  ]), []);
 
   return <RouterProvider router={router} />;
 };

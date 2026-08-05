@@ -5,11 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCollections } from '../hooks/useCollections.ts';
 import { type Collection } from '../api/collections.ts';
 
-type Props = {
-  getAccessTokenSilently: () => Promise<string>;
-};
-
-export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
+export const CollectionsPage = () => {
   const navigate = useNavigate();
   const { collections, isLoading, error, fetchCollections, createCollection, updateCollection, deleteCollection } = useCollections();
   

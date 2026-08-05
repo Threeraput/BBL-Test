@@ -173,4 +173,12 @@ unless the filter dropdown state makes it clear.
 1. Enabled explicit CORS in NestJS `main.ts` with origins `['http://localhost:3000', 'http://127.0.0.1:3000']`, credentials, and standard HTTP methods.
 2. Decorated all DTOs (`CreateCollectionDto`, `CreateBookmarkDto`, `UpdateBookmarkDto`) with `class-validator` annotations (`@IsString()`, `@IsNotEmpty()`, `@IsOptional()`).
 3. Added a frontend URL normalizer `formatUrl()` in `Bookmarks.tsx` while keeping backend validation as `@IsString()` + `@IsNotEmpty()`.
-**Rationale:** Enforces strict whitelist validation without rejecting valid domain inputs (e.g. `localhost`, IP addresses, or inputs missing explicit `https://` schemes).
+**Rationale:** Enforces strict whitelist validation without rejecting valid domain inputs (e.g. `localhost`, IP addresses, or inputs missing explicit `https://` schemes).
+
+## Docker Containerization (§ Optional Bonus) — Scope Decision
+
+**Context:** SPEC.md lists Docker containerization under Optional Bonuses ("only after the above is solid").
+**Decision:** Not implementing Docker containerization in this submission.
+**Rationale:** Allocated available project time strictly toward perfecting the non-negotiable core requirements: Auth0 PKCE token verification, single-owner row-level access control via Prisma, 404 privacy leak prevention, and comprehensive UI state management. Given limited familiarity with Docker multi-stage builds and Nginx SPA routing, attempting to containerize without deep experience introduced unnecessary risk of misconfiguring security headers, environment variables, or Auth0 callback endpoints.
+**Trade-off:** The application must be launched directly on local Node.js environments (`npm run start:dev` for backend, `npm run dev` for frontend) rather than instantiated via `docker-compose up`.
+

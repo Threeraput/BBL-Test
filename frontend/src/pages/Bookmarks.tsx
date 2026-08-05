@@ -6,11 +6,7 @@ import { useBookmarks } from '../hooks/useBookmarks.ts';
 import { useCollections } from '../hooks/useCollections.ts';
 import { type Bookmark } from '../api/bookmarks.ts';
 
-type Props = {
-  getAccessTokenSilently: () => Promise<string>;
-};
-
-export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
+export const BookmarksPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const collectionIdParam = searchParams.get('collectionId') || 'all';
 

@@ -12,7 +12,12 @@ export interface Bookmark {
 }
 
 export type CreateBookmarkDto = Pick<Bookmark, 'url' | 'title' | 'notes' | 'collectionId'>;
-export type UpdateBookmarkDto = Partial<CreateBookmarkDto>;
+export type UpdateBookmarkDto = Partial<{
+  url: string;
+  title: string;
+  notes: string | null;
+  collectionId: string | null;
+}>;
 
 export const bookmarksApi = {
   getBookmarks: (token: string, collectionId?: string) => {
