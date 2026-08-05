@@ -100,7 +100,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
     ? bookmarks 
     : bookmarks.filter(b => b.collectionId === filterCollection);
 
-  const FormFields = () => (
+  const renderFormFields = () => (
     <>
       <TextField
         fullWidth margin="normal" label="Title" required
@@ -212,7 +212,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onClose={() => setIsCreateOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>New Bookmark</DialogTitle>
-        <DialogContent sx={{ pt: 1 }}><FormFields /></DialogContent>
+        <DialogContent sx={{ pt: 1 }}>{renderFormFields()}</DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button onClick={() => setIsCreateOpen(false)} color="inherit">Cancel</Button>
           <Button onClick={handleCreate} variant="contained" disabled={!formData.title.trim() || !formData.url.trim()}>Save</Button>
@@ -222,7 +222,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onClose={() => setIsEditOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Edit Bookmark</DialogTitle>
-        <DialogContent sx={{ pt: 1 }}><FormFields /></DialogContent>
+        <DialogContent sx={{ pt: 1 }}>{renderFormFields()}</DialogContent>
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button onClick={() => setIsEditOpen(false)} color="inherit">Cancel</Button>
           <Button onClick={handleEdit} variant="contained" disabled={!formData.title.trim() || !formData.url.trim()}>Save Changes</Button>
