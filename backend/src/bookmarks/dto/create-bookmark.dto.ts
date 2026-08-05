@@ -2,7 +2,6 @@ import { IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID } from 'class-validator
 
 export class CreateBookmarkDto {
   @IsString()
-  @IsUrl()
   @IsNotEmpty()
   url!: string;
 

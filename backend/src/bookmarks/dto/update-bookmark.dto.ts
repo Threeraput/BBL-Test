@@ -2,7 +2,6 @@ import { IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID } from 'class-validator
 
 export class UpdateBookmarkDto {
   @IsString()
-  @IsUrl()
   @IsNotEmpty()
   url!: string;
 
@@ -22,7 +21,6 @@ export class UpdateBookmarkDto {
 
 export class PatchBookmarkDto {
   @IsString()
-  @IsUrl()
   @IsOptional()
   url?: string;
 

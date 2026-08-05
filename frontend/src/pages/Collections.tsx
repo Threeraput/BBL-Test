@@ -1,22 +1,15 @@
-import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Skeleton, TextField, Typography } from '@mui/material';
-import { Folder, MoreVertical, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Skeleton, TextField, Typography, Alert } from '@mui/material';
+import { Folder, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { apiClient } from '../api/client';
-
-type Collection = {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import { useCollections } from '../hooks/useCollections.ts';
+import { type Collection } from '../api/collections.ts';
 
 type Props = {
   getAccessTokenSilently: () => Promise<string>;
 };
 
 export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { collections, isLoading, error, fetchCollections, createCollection, updateCollection, deleteCollection } = useCollections();
   
   // Dialog states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -27,49 +20,29 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
   // Form state
   const [nameInput, setNameInput] = useState('');
 
-  const fetchCollections = async () => {
-    try {
-      setIsLoading(true);
-      const token = await getAccessTokenSilently();
-      const data = await apiClient<Collection[]>('/collections', { token });
-      setCollections(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchCollections();
-  }, []);
+  }, [fetchCollections]);
 
   const handleCreate = async () => {
     if (!nameInput.trim()) return;
     try {
-      const token = await getAccessTokenSilently();
-      await apiClient('/collections', { method: 'POST', body: { name: nameInput }, token });
+      await createCollection(nameInput);
       setIsCreateOpen(false);
       setNameInput('');
-      fetchCollections();
     } catch (e) {
       console.error(e);
+      // Let user see error in console or UI if needed
     }
   };
 
   const handleEdit = async () => {
     if (!selectedCollection || !nameInput.trim()) return;
     try {
-      const token = await getAccessTokenSilently();
-      await apiClient(`/collections/${selectedCollection.id}`, { 
-        method: 'PATCH', 
-        body: { name: nameInput }, 
-        token 
-      });
+      await updateCollection(selectedCollection.id, nameInput);
       setIsEditOpen(false);
       setSelectedCollection(null);
       setNameInput('');
-      fetchCollections();
     } catch (e) {
       console.error(e);
     }
@@ -78,11 +51,9 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
   const handleDelete = async () => {
     if (!selectedCollection) return;
     try {
-      const token = await getAccessTokenSilently();
-      await apiClient(`/collections/${selectedCollection.id}`, { method: 'DELETE', token });
+      await deleteCollection(selectedCollection.id);
       setIsDeleteOpen(false);
       setSelectedCollection(null);
-      fetchCollections();
     } catch (e) {
       console.error(e);
     }
@@ -101,6 +72,12 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
         </Button>
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
       {isLoading ? (
         <Grid container spacing={3}>
           {[1, 2, 3].map(i => (
@@ -109,7 +86,7 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
             </Grid>
           ))}
         </Grid>
-      ) : collections.length === 0 ? (
+      ) : collections.length === 0 && !error ? (
         <Box sx={{ textAlign: 'center', py: 10, bgcolor: 'background.paper', borderRadius: 3, border: '1px dashed', borderColor: 'divider' }}>
           <Folder size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
           <Typography variant="h2" color="text.secondary" gutterBottom>No collections yet</Typography>

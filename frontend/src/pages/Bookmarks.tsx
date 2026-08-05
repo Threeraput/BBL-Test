@@ -1,30 +1,21 @@
-import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, Skeleton, TextField, Typography, Chip, Link } from '@mui/material';
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, Skeleton, TextField, Typography, Chip, Link, Alert } from '@mui/material';
 import { Bookmark as BookmarkIcon, Plus, Trash2, Edit2, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { apiClient } from '../api/client';
-
-type Bookmark = {
-  id: string;
-  url: string;
-  title: string;
-  notes: string | null;
-  collectionId: string | null;
-  createdAt: string;
-};
-
-type Collection = {
-  id: string;
-  name: string;
-};
+import { useBookmarks } from '../hooks/useBookmarks.ts';
+import { useCollections } from '../hooks/useCollections.ts';
+import { type Bookmark } from '../api/bookmarks.ts';
 
 type Props = {
   getAccessTokenSilently: () => Promise<string>;
 };
 
 export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { bookmarks, isLoading: isBookmarksLoading, error: bookmarksError, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks();
+  const { collections, isLoading: isCollectionsLoading, error: collectionsError, fetchCollections } = useCollections();
+  
+  const isLoading = isBookmarksLoading || isCollectionsLoading;
+  const error = bookmarksError || collectionsError;
+  
   const [filterCollection, setFilterCollection] = useState<string>('all');
   
   // Dialog states
@@ -36,41 +27,30 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
   // Form state
   const [formData, setFormData] = useState({ title: '', url: '', notes: '', collectionId: '' });
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const token = await getAccessTokenSilently();
-      const [bData, cData] = await Promise.all([
-        apiClient<Bookmark[]>('/bookmarks', { token }),
-        apiClient<Collection[]>('/collections', { token })
-      ]);
-      setBookmarks(bData);
-      setCollections(cData);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchBookmarks();
+    fetchCollections();
+  }, [fetchBookmarks, fetchCollections]);
+
+  const formatUrl = (inputUrl: string) => {
+    const trimmed = inputUrl.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
 
   const handleCreate = async () => {
     if (!formData.title.trim() || !formData.url.trim()) return;
     try {
-      const token = await getAccessTokenSilently();
       const body = {
         title: formData.title,
-        url: formData.url,
+        url: formatUrl(formData.url),
         notes: formData.notes || undefined,
         collectionId: formData.collectionId || undefined
       };
-      await apiClient('/bookmarks', { method: 'POST', body, token });
+      await createBookmark(body);
       setIsCreateOpen(false);
       setFormData({ title: '', url: '', notes: '', collectionId: '' });
-      fetchData();
     } catch (e) {
       console.error(e);
     }
@@ -79,18 +59,16 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
   const handleEdit = async () => {
     if (!selectedBookmark || !formData.title.trim() || !formData.url.trim()) return;
     try {
-      const token = await getAccessTokenSilently();
       const body = {
         title: formData.title,
-        url: formData.url,
+        url: formatUrl(formData.url),
         notes: formData.notes || null,
         collectionId: formData.collectionId || null
       };
-      await apiClient(`/bookmarks/${selectedBookmark.id}`, { method: 'PUT', body, token });
+      await updateBookmark(selectedBookmark.id, body);
       setIsEditOpen(false);
       setSelectedBookmark(null);
       setFormData({ title: '', url: '', notes: '', collectionId: '' });
-      fetchData();
     } catch (e) {
       console.error(e);
     }
@@ -99,11 +77,9 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
   const handleDelete = async () => {
     if (!selectedBookmark) return;
     try {
-      const token = await getAccessTokenSilently();
-      await apiClient(`/bookmarks/${selectedBookmark.id}`, { method: 'DELETE', token });
+      await deleteBookmark(selectedBookmark.id);
       setIsDeleteOpen(false);
       setSelectedBookmark(null);
-      fetchData();
     } catch (e) {
       console.error(e);
     }
@@ -177,6 +153,12 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
         </Box>
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+      )}
+
       {isLoading ? (
         <Grid container spacing={3}>
           {[1, 2, 3].map(i => (
@@ -185,7 +167,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
             </Grid>
           ))}
         </Grid>
-      ) : filteredBookmarks.length === 0 ? (
+      ) : filteredBookmarks.length === 0 && !error ? (
         <Box sx={{ textAlign: 'center', py: 10, bgcolor: 'background.paper', borderRadius: 3, border: '1px dashed', borderColor: 'divider' }}>
           <BookmarkIcon size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
           <Typography variant="h2" color="text.secondary" gutterBottom>No bookmarks found</Typography>
