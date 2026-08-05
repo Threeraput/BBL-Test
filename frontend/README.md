@@ -1,75 +1,27 @@
-# React + TypeScript + Vite
+# BBL Bookmark Manager — Frontend Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + TypeScript frontend for the Private Bookmark Manager application, built with MUI v9 and React Router v8.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🎨 Features & UI Architecture
 
-## React Compiler
+- **Auth0 PKCE Integration:** Single sign-on with in-memory token storage (`cacheLocation: "memory"`). No tokens are saved in `localStorage`.
+- **Custom Design System:** MUI v9 custom theme with Pastel Blue palette (`#8EC5FC`), Inter typography, card shadows, and responsive grid layouts.
+- **Custom Hooks Data Layer:** Encapsulated API communication layer using `useCollections` and `useBookmarks` hooks.
+- **Page Views:**
+  - `/login`: Auth0 login landing page.
+  - `/collections`: Collection cards with inline Edit/Delete modals and click-to-filter navigation.
+  - `/bookmarks`: Bookmark cards with external link opening, Collection filter dropdown (synced with URL `?collectionId=`), and Create/Edit/Delete modals.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## ⚙️ Development Commands
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Run from `frontend/`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run dev     # Start Vite development server (Port 3000)
+npm run build   # Typecheck (tsc -b) and bundle for production via Vite
+npm run preview # Preview production build locally
 ```

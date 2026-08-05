@@ -1,129 +1,97 @@
-# BBL Test — Private Bookmark Manager
+# BBL Bookmark Manager — Fullstack Web Application
 
-A backend API for a private read-later application. Authenticated users can manage their own bookmarks and collections; data belonging to other users must never be accessible or disclosed.
+A secure, private read-later bookmark manager built with Node.js/NestJS (Backend) and React/Vite/MUI (Frontend). Authenticated users can manage their private collections and bookmarks. Data belonging to other users is completely isolated and inaccessible (returns 404 Not Found to prevent information disclosure).
 
-> Current status: this repository contains the backend API in `backend/`. The frontend specified for the project has not yet been implemented.
+---
 
-## Features
+## 🚀 Features
 
-- Auth0/OIDC authentication that accepts only an API-scoped **access token**.
-- JWT signature, issuer, audience, and expiry validation through the Auth0 discovery document and JWKS.
-- Automatic database provisioning of a user on `GET /users/me`.
-- CRUD operations for collections and bookmarks.
-- Bookmark filtering by collection through `?collectionId=`.
-- Every query is scoped by `ownerId`; attempts to access another user's data return `404`.
-- Prevents assigning a bookmark to a collection owned by another user.
+- **Authentication & Security:** Auth0 OIDC with Authorization Code Flow + PKCE (S256). Tokens are stored strictly in JS memory (`cacheLocation: "memory"`, no `localStorage`).
+- **Privacy Model:** Every record is scoped by `ownerId` at the database level. Cross-user access attempts return `404 Not Found` (never `403`) to prevent resource probing.
+- **Cross-Resource Protection:** Creating/updating bookmarks with a `collectionId` verifies caller ownership of the target collection.
+- **Frontend Pages:**
+  - `/login`: Secure OIDC sign-in page.
+  - `/collections`: Manage collections (List, Create, Edit, Delete). Clicking a card navigates to `/bookmarks?collectionId=...`.
+  - `/bookmarks`: Manage bookmarks (List, Filter by collection, Create, Edit, Delete, Open links).
+- **Automated CI/CD:** GitHub Actions workflow running build, linting, typechecking, and Jest tests on every push.
 
-## Technology
+---
 
-- Node.js / TypeScript / NestJS
-- PostgreSQL + Prisma ORM
-- Auth0 OIDC and JWT validation with `jose`
-- Jest + Supertest
+## 🛠️ Tech Stack
 
-## Getting started
+- **Backend:** Node.js, TypeScript, NestJS, Prisma ORM, PostgreSQL, `jose` (JWKS JWT verification), Jest
+- **Frontend:** React, Vite, TypeScript, MUI v9 (Custom Pastel Blue Theme), React Router v8, Auth0 React SDK
 
-You need Node.js, npm, and a running PostgreSQL instance.
+---
 
+## ⚙️ Quick Start
+
+### 1. Prerequisites
+- Node.js (v20+)
+- PostgreSQL running locally or remotely
+
+### 2. Backend Setup
 ```bash
 cd backend
 npm ci
 ```
-
-Create `backend/.env` with the PostgreSQL connection string:
-
+Create `backend/.env`:
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"
-PORT=3000
+DATABASE_URL="postgresql://postgres:password@localhost:5432/bbl_bookmarks?schema=public"
+PORT=3001
 ```
-
-Generate the Prisma client and apply the migrations included in the repository:
-
+Apply migrations and generate Prisma client:
 ```bash
 npx prisma generate
 npx prisma migrate deploy
 ```
-
-Start the API in development mode:
-
+Start the backend dev server (Port 3001):
 ```bash
 npm run start:dev
 ```
 
-By default, the API listens on `http://localhost:3000`.
-
-## Authentication
-
-All endpoints that access user data require this header:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-Any connected frontend should use the Authorization Code flow with PKCE (S256) through Auth0 and request an access token for the `https://bbl-candidate-test-api` audience. An ID token cannot be used in its place.
-
-The API reads the issuer, JWKS URI, and userinfo endpoint from the Auth0 discovery document at runtime, supporting key rotation and tenant configuration changes.
-
-## API endpoints
-
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/users/me` | Retrieve or provision the current user |
-| GET | `/collections` | List the user's collections |
-| POST | `/collections` | Create a collection (`{ "name": "..." }`) |
-| GET | `/collections/:id` | Retrieve a collection |
-| PUT/PATCH | `/collections/:id` | Update a collection |
-| DELETE | `/collections/:id` | Delete a collection (`204`) |
-| GET | `/collections/:id/bookmarks` | List bookmarks in a collection |
-| GET | `/bookmarks?collectionId=:id` | List bookmarks, optionally filtered by collection |
-| POST | `/bookmarks` | Create a bookmark |
-| GET | `/bookmarks/:id` | Retrieve a bookmark |
-| PUT/PATCH | `/bookmarks/:id` | Update a bookmark |
-| DELETE | `/bookmarks/:id` | Delete a bookmark (`204`) |
-
-Example request body for creating a bookmark:
-
-```json
-{
-  "url": "https://example.com/article",
-  "title": "An article to read",
-  "notes": "optional note",
-  "collectionId": "optional-collection-uuid"
-}
-```
-
-`collectionId` is optional. When supplied, it must belong to the authenticated user. Deleting a collection leaves its bookmarks uncategorised (`collectionId = null`).
-
-## Common commands
-
-Run these commands from `backend/`:
-
+### 3. Frontend Setup
 ```bash
-npm run build        # Build the production bundle
-npm test             # Run unit tests
-npm run test:cov     # Run tests with coverage
-npm run test:e2e     # Run end-to-end tests
-npm run lint         # Lint and apply automatic fixes
+cd frontend
+npm ci
+```
+Create `frontend/.env`:
+```env
+VITE_AUTH0_DOMAIN=dev-yg.us.auth0.com
+VITE_AUTH0_CLIENT_ID=H9F6QG5SzTKMv0tbmgxLj9LjG1EKVllA
+VITE_AUTH0_AUDIENCE=https://bbl-candidate-test-api
+VITE_AUTH0_CALLBACK_URL=http://localhost:3000/callback
+VITE_API_BASE_URL=http://localhost:3001
+```
+Start the frontend dev server (Port 3000):
+```bash
+npm run dev
 ```
 
-## Repository structure
+Open `http://localhost:3000` in your browser.
 
-```text
-backend/
-  prisma/             # PostgreSQL schema and migrations
-  src/auth/           # Auth0 discovery, JWKS, and Nest guard
-  src/users/          # /users/me endpoint and user provisioning
-  src/collections/    # Collection CRUD and nested bookmarks endpoint
-  src/bookmarks/      # Bookmark CRUD and collection filter
-  test/               # End-to-end test configuration
-API_DESIGN.md         # API and token-validation design notes
-DECISIONS.md          # Architectural decision log
-SPEC.md               # Original project requirements
-AI_WORKFLOW.md        # AI-assisted development workflow log
+---
+
+## 🧪 Testing
+
+Run backend automated unit & integration test suites (82 passing tests):
+```bash
+cd backend
+npm test
 ```
 
-## Further documentation
+Run frontend build check & typecheck:
+```bash
+cd frontend
+npm run build
+```
 
-- [API design](API_DESIGN.md)
-- [Design decisions](DECISIONS.md)
-- [Project specification](SPEC.md)
+---
+
+## 📚 Documentation & Logs
+
+- [Architecture Decisions (DECISIONS.md)](DECISIONS.md)
+- [API Design Specification (API_DESIGN.md)](API_DESIGN.md)
+- [AI Workflow Log (AI_WORKFLOW.md)](AI_WORKFLOW.md)
+- [Adversarial Security Test Report](transcripts/privacy-adversarial-test-report.md)
+- [Collection Navigation & API Report](transcripts/collection-navigation-and-nested-api-report.md)
