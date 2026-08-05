@@ -1,6 +1,7 @@
 import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Grid, IconButton, InputLabel, MenuItem, Select, Skeleton, TextField, Typography, Chip, Link, Alert } from '@mui/material';
 import { Bookmark as BookmarkIcon, Plus, Trash2, Edit2, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useBookmarks } from '../hooks/useBookmarks.ts';
 import { useCollections } from '../hooks/useCollections.ts';
 import { type Bookmark } from '../api/bookmarks.ts';
@@ -10,13 +11,14 @@ type Props = {
 };
 
 export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const collectionIdParam = searchParams.get('collectionId') || 'all';
+
   const { bookmarks, isLoading: isBookmarksLoading, error: bookmarksError, fetchBookmarks, createBookmark, updateBookmark, deleteBookmark } = useBookmarks();
   const { collections, isLoading: isCollectionsLoading, error: collectionsError, fetchCollections } = useCollections();
   
   const isLoading = isBookmarksLoading || isCollectionsLoading;
   const error = bookmarksError || collectionsError;
-  
-  const [filterCollection, setFilterCollection] = useState<string>('all');
   
   // Dialog states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -28,9 +30,18 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
   const [formData, setFormData] = useState({ title: '', url: '', notes: '', collectionId: '' });
 
   useEffect(() => {
-    fetchBookmarks();
+    const filterId = collectionIdParam !== 'all' ? collectionIdParam : undefined;
+    fetchBookmarks(filterId);
     fetchCollections();
-  }, [fetchBookmarks, fetchCollections]);
+  }, [collectionIdParam, fetchBookmarks, fetchCollections]);
+
+  const handleFilterChange = (value: string) => {
+    if (value === 'all') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ collectionId: value });
+    }
+  };
 
   const formatUrl = (inputUrl: string) => {
     const trimmed = inputUrl.trim();
@@ -96,9 +107,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
     setIsEditOpen(true);
   };
 
-  const filteredBookmarks = filterCollection === 'all' 
-    ? bookmarks 
-    : bookmarks.filter(b => b.collectionId === filterCollection);
+  const displayBookmarks = bookmarks;
 
   const renderFormFields = () => (
     <>
@@ -135,8 +144,8 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 200, bgcolor: 'background.paper', borderRadius: 2 }}>
             <Select
-              value={filterCollection}
-              onChange={(e) => setFilterCollection(e.target.value)}
+              value={collectionIdParam}
+              onChange={(e) => handleFilterChange(e.target.value)}
               displayEmpty
             >
               <MenuItem value="all">All Collections</MenuItem>
@@ -146,7 +155,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
           <Button 
             variant="contained" 
             startIcon={<Plus size={18} />}
-            onClick={() => { setFormData({ title: '', url: '', notes: '', collectionId: filterCollection !== 'all' ? filterCollection : '' }); setIsCreateOpen(true); }}
+            onClick={() => { setFormData({ title: '', url: '', notes: '', collectionId: collectionIdParam !== 'all' ? collectionIdParam : '' }); setIsCreateOpen(true); }}
           >
             New Bookmark
           </Button>
@@ -167,7 +176,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
             </Grid>
           ))}
         </Grid>
-      ) : filteredBookmarks.length === 0 && !error ? (
+      ) : displayBookmarks.length === 0 && !error ? (
         <Box sx={{ textAlign: 'center', py: 10, bgcolor: 'background.paper', borderRadius: 3, border: '1px dashed', borderColor: 'divider' }}>
           <BookmarkIcon size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
           <Typography variant="h2" color="text.secondary" gutterBottom>No bookmarks found</Typography>
@@ -176,7 +185,7 @@ export const BookmarksPage = ({ getAccessTokenSilently }: Props) => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {filteredBookmarks.map(b => {
+          {displayBookmarks.map(b => {
             const coll = collections.find(c => c.id === b.collectionId);
             return (
               <Grid size={{ xs: 12, sm: 6, md: 4 }} key={b.id}>

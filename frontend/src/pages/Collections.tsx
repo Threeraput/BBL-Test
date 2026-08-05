@@ -1,6 +1,7 @@
 import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Skeleton, TextField, Typography, Alert } from '@mui/material';
 import { Folder, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCollections } from '../hooks/useCollections.ts';
 import { type Collection } from '../api/collections.ts';
 
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
+  const navigate = useNavigate();
   const { collections, isLoading, error, fetchCollections, createCollection, updateCollection, deleteCollection } = useCollections();
   
   // Dialog states
@@ -32,7 +34,6 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
       setNameInput('');
     } catch (e) {
       console.error(e);
-      // Let user see error in console or UI if needed
     }
   };
 
@@ -97,17 +98,37 @@ export const CollectionsPage = ({ getAccessTokenSilently }: Props) => {
         <Grid container spacing={3}>
           {collections.map(col => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={col.id}>
-              <Card sx={{ height: '100%', position: 'relative' }}>
+              <Card 
+                onClick={() => navigate(`/bookmarks?collectionId=${col.id}`)}
+                sx={{ 
+                  height: '100%', 
+                  position: 'relative', 
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 2,
+                  }
+                }}
+              >
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, color: 'primary.main' }}>
                       <Folder size={24} />
                     </Box>
                     <Box>
-                      <IconButton size="small" onClick={() => { setSelectedCollection(col); setNameInput(col.name); setIsEditOpen(true); }} sx={{ mr: 0.5 }}>
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => { e.stopPropagation(); setSelectedCollection(col); setNameInput(col.name); setIsEditOpen(true); }} 
+                        sx={{ mr: 0.5 }}
+                      >
                         <Edit2 size={16} />
                       </IconButton>
-                      <IconButton size="small" onClick={() => { setSelectedCollection(col); setIsDeleteOpen(true); }} color="error">
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => { e.stopPropagation(); setSelectedCollection(col); setIsDeleteOpen(true); }} 
+                        color="error"
+                      >
                         <Trash2 size={16} />
                       </IconButton>
                     </Box>

@@ -16,8 +16,8 @@ export type UpdateBookmarkDto = Partial<CreateBookmarkDto>;
 
 export const bookmarksApi = {
   getBookmarks: (token: string, collectionId?: string) => {
-    const query = collectionId ? `?collectionId=${collectionId}` : '';
-    return apiClient<Bookmark[]>(`/bookmarks${query}`, { token });
+    const endpoint = collectionId ? `/collections/${collectionId}/bookmarks` : '/bookmarks';
+    return apiClient<Bookmark[]>(endpoint, { token });
   },
     
   createBookmark: (token: string, data: CreateBookmarkDto) => 

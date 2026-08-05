@@ -138,3 +138,16 @@ without a redesign — noted here as the extension point.
 (collectionId, sharedWithUserId, permission) and a read-only grant
 path, kept deliberately separate from the ownership check so the
 existing privacy tests wouldn't need to change semantics.
+
+## "View one" collection = filtered bookmarks view
+
+**Context:** Spec's frontend section says /collections should support
+"view one" but doesn't define what that shows. Backend has an explicit
+GET /collections/:id/bookmarks endpoint.
+**Decision:** Clicking a collection card navigates to /bookmarks
+pre-filtered to that collection, using the nested endpoint rather
+than a separate detail page/dialog — reuses the existing bookmarks
+list UI instead of duplicating it.
+**Trade-off:** No dedicated "collection detail" view; the collection
+name itself isn't shown prominently on the filtered bookmarks page
+unless the filter dropdown state makes it clear.
