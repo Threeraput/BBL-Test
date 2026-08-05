@@ -1,0 +1,13 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies & Build
+node_modules/
+dist/
+coverage/
+
+# OS & Editor
+.DS_Store
+*.log
