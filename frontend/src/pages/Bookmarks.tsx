@@ -46,16 +46,28 @@ export const BookmarksPage = () => {
     return `https://${trimmed}`;
   };
 
+  const activeFilter = collectionIdParam !== 'all' ? collectionIdParam : undefined;
+
   const handleCreate = async () => {
     if (!formData.title.trim() || !formData.url.trim()) return;
     try {
+      const targetColId = formData.collectionId;
       const body = {
         title: formData.title,
         url: formatUrl(formData.url),
         notes: formData.notes || undefined,
-        collectionId: formData.collectionId || undefined
+        collectionId: targetColId || undefined
       };
-      await createBookmark(body);
+
+      // Determine which filter to fetch/display: if user picked a collection, switch to it!
+      const targetFilter = targetColId ? targetColId : activeFilter;
+      await createBookmark(body, targetFilter);
+
+      // Automatically switch the URL filter dropdown to the newly selected collection
+      if (targetColId && targetColId !== collectionIdParam) {
+        setSearchParams({ collectionId: targetColId });
+      }
+
       setIsCreateOpen(false);
       setFormData({ title: '', url: '', notes: '', collectionId: '' });
     } catch (e) {
@@ -72,7 +84,7 @@ export const BookmarksPage = () => {
         notes: formData.notes || null,
         collectionId: formData.collectionId || null
       };
-      await updateBookmark(selectedBookmark.id, body);
+      await updateBookmark(selectedBookmark.id, body, activeFilter);
       setIsEditOpen(false);
       setSelectedBookmark(null);
       setFormData({ title: '', url: '', notes: '', collectionId: '' });
@@ -84,7 +96,7 @@ export const BookmarksPage = () => {
   const handleDelete = async () => {
     if (!selectedBookmark) return;
     try {
-      await deleteBookmark(selectedBookmark.id);
+      await deleteBookmark(selectedBookmark.id, activeFilter);
       setIsDeleteOpen(false);
       setSelectedBookmark(null);
     } catch (e) {
@@ -103,7 +115,9 @@ export const BookmarksPage = () => {
     setIsEditOpen(true);
   };
 
-  const displayBookmarks = bookmarks;
+  const displayBookmarks = collectionIdParam === 'all'
+    ? bookmarks
+    : bookmarks.filter(b => b.collectionId === collectionIdParam);
 
   const renderFormFields = () => (
     <>

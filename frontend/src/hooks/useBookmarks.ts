@@ -22,31 +22,31 @@ export const useBookmarks = () => {
     }
   }, [getAccessTokenSilently]);
 
-  const createBookmark = async (data: CreateBookmarkDto) => {
+  const createBookmark = async (data: CreateBookmarkDto, collectionIdFilter?: string) => {
     try {
       const token = await getAccessTokenSilently();
       await bookmarksApi.createBookmark(token, data);
-      await fetchBookmarks(); // Assume we refresh all, or could pass collectionId if filtered
+      await fetchBookmarks(collectionIdFilter);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to create bookmark');
     }
   };
 
-  const updateBookmark = async (id: string, data: UpdateBookmarkDto) => {
+  const updateBookmark = async (id: string, data: UpdateBookmarkDto, collectionIdFilter?: string) => {
     try {
       const token = await getAccessTokenSilently();
       await bookmarksApi.updateBookmark(token, id, data);
-      await fetchBookmarks();
+      await fetchBookmarks(collectionIdFilter);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to update bookmark');
     }
   };
 
-  const deleteBookmark = async (id: string) => {
+  const deleteBookmark = async (id: string, collectionIdFilter?: string) => {
     try {
       const token = await getAccessTokenSilently();
       await bookmarksApi.deleteBookmark(token, id);
-      await fetchBookmarks();
+      await fetchBookmarks(collectionIdFilter);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to delete bookmark');
     }
