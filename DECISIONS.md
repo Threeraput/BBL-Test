@@ -151,3 +151,26 @@ list UI instead of duplicating it.
 **Trade-off:** No dedicated "collection detail" view; the collection
 name itself isn't shown prominently on the filtered bookmarks page
 unless the filter dropdown state makes it clear.
+
+## Collection deletion behavior (SetNull vs Cascade)
+
+**Context:** Under-specified requirement in SPEC.md regarding collection deletion behavior when a collection contains bookmarks.
+**Decision:** Configured relation on `Bookmark` to set `collectionId` to `null` (SetNull) when a `Collection` is deleted, rather than cascading deletion (Cascade).
+**Rationale:** Bookmarks represent valuable saved links. Deleting a collection is an organizational action, not a data-purge request. Retaining bookmarks as uncategorized items prevents accidental loss of user data while maintaining referential integrity.
+**Trade-off:** Bookmarks will remain in the user's account without a collection assigned, requiring the user to manually re-categorize or delete them individually if desired.
+
+## Frontend Auth Storage & Data-Fetching Architecture
+
+**Context:** Non-negotiable security requirement states Auth0 tokens must NEVER be stored in `localStorage`, `sessionStorage`, `cookies`, or `IndexedDB`.
+**Decision:** Configured Auth0 React SDK with `cacheLocation: "memory"`. Encapsulated token acquisition (`getAccessTokenSilently`) inside custom React hooks (`useCollections`, `useBookmarks`) and modular API resources (`client.ts`, `collections.ts`, `bookmarks.ts`).
+**Rationale:** Keeps token in JS memory context only, neutralizing XSS token theft risks. The custom hook layer abstracts token passing away from UI components while managing `isLoading`, `error`, and `data` states cleanly.
+**Trade-off:** Token relies on Auth0's silent token refresh on page reloads, adding a brief async check handled via UI loading skeletons.
+
+## Backend Validation Pipe & CORS Configuration
+
+**Context:** Cross-origin requests from Vite dev server (`localhost:3000`) to NestJS API server (`localhost:3001`) and strict DTO whitelist rules.
+**Decision:** 
+1. Enabled explicit CORS in NestJS `main.ts` with origins `['http://localhost:3000', 'http://127.0.0.1:3000']`, credentials, and standard HTTP methods.
+2. Decorated all DTOs (`CreateCollectionDto`, `CreateBookmarkDto`, `UpdateBookmarkDto`) with `class-validator` annotations (`@IsString()`, `@IsNotEmpty()`, `@IsOptional()`).
+3. Added a frontend URL normalizer `formatUrl()` in `Bookmarks.tsx` while keeping backend validation as `@IsString()` + `@IsNotEmpty()`.
+**Rationale:** Enforces strict whitelist validation without rejecting valid domain inputs (e.g. `localhost`, IP addresses, or inputs missing explicit `https://` schemes).
