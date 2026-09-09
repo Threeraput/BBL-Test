@@ -45,7 +45,11 @@ describe('UsersController GET /me', () => {
 
   it('คืน user ที่ upsert แล้วเมื่อมี auth context ครบ', async () => {
     const request = {
-      auth: { token: 'raw-token', subject: mockPayload.sub, payload: mockPayload },
+      auth: {
+        token: 'raw-token',
+        subject: mockPayload.sub,
+        payload: mockPayload,
+      },
     } as AuthenticatedRequest;
 
     const result = await controller.getMe(request);
@@ -66,7 +70,11 @@ describe('GET /users/me — unauthenticated → HTTP 401', () => {
         // AuthService stub — guard ใช้จริง (ไม่ override) เพื่อตรวจ HTTP 401
         {
           provide: AuthService,
-          useValue: { verifyAccessToken: jest.fn().mockRejectedValue(new UnauthorizedException()) },
+          useValue: {
+            verifyAccessToken: jest
+              .fn()
+              .mockRejectedValue(new UnauthorizedException()),
+          },
         },
         AuthGuard,
       ],

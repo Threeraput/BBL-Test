@@ -118,11 +118,15 @@ describe('CollectionsService — happy path', () => {
 
 describe('CollectionsService — adversarial (owner B tries to access owner A data)', () => {
   // findFirst returns null when ownerId does not match — simulates Prisma behaviour
-  const prismaNotFound = makePrisma({ findFirst: jest.fn().mockResolvedValue(null) });
+  const prismaNotFound = makePrisma({
+    findFirst: jest.fn().mockResolvedValue(null),
+  });
 
   it('getOne throws NotFoundException — not 403 — so existence is not revealed', async () => {
     const service = new CollectionsService(prismaNotFound);
-    await expect(service.getOne(COLLECTION_ID, OWNER_B)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getOne(COLLECTION_ID, OWNER_B)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('replace throws 404 when ownerId does not match', async () => {
@@ -141,6 +145,8 @@ describe('CollectionsService — adversarial (owner B tries to access owner A da
 
   it('remove throws 404 when ownerId does not match', async () => {
     const service = new CollectionsService(prismaNotFound);
-    await expect(service.remove(COLLECTION_ID, OWNER_B)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.remove(COLLECTION_ID, OWNER_B)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

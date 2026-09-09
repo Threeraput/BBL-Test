@@ -54,7 +54,9 @@ describe('BookmarksService — happy path', () => {
     const service = new BookmarksService(prisma);
     await service.list(OWNER_A, COL_ID);
     expect(prisma.bookmark.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { ownerId: OWNER_A, collectionId: COL_ID } }),
+      expect.objectContaining({
+        where: { ownerId: OWNER_A, collectionId: COL_ID },
+      }),
     );
   });
 
@@ -72,15 +74,22 @@ describe('BookmarksService — happy path', () => {
     const service = new BookmarksService(prisma);
     await service.create(OWNER_A, { url: 'https://x.com', title: 'X' });
     expect(prisma.bookmark.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ ownerId: OWNER_A }) }),
+      expect.objectContaining({
+        data: expect.objectContaining({ ownerId: OWNER_A }),
+      }),
     );
   });
 
   it('replace calls getOne then update', async () => {
     const prisma = makePrisma();
     const service = new BookmarksService(prisma);
-    await service.replace(BM_ID, OWNER_A, { url: 'https://new.com', title: 'New' });
-    expect(prisma.bookmark.findFirst).toHaveBeenCalledWith({ where: { id: BM_ID, ownerId: OWNER_A } });
+    await service.replace(BM_ID, OWNER_A, {
+      url: 'https://new.com',
+      title: 'New',
+    });
+    expect(prisma.bookmark.findFirst).toHaveBeenCalledWith({
+      where: { id: BM_ID, ownerId: OWNER_A },
+    });
     expect(prisma.bookmark.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: BM_ID } }),
     );
@@ -100,58 +109,82 @@ describe('BookmarksService — happy path', () => {
     const prisma = makePrisma();
     const service = new BookmarksService(prisma);
     await service.patch(BM_ID, OWNER_A, {});
-    expect(prisma.bookmark.update).toHaveBeenCalledWith({ where: { id: BM_ID }, data: {} });
+    expect(prisma.bookmark.update).toHaveBeenCalledWith({
+      where: { id: BM_ID },
+      data: {},
+    });
   });
 
   it('remove calls getOne then delete', async () => {
     const prisma = makePrisma();
     const service = new BookmarksService(prisma);
     await service.remove(BM_ID, OWNER_A);
-    expect(prisma.bookmark.findFirst).toHaveBeenCalledWith({ where: { id: BM_ID, ownerId: OWNER_A } });
-    expect(prisma.bookmark.delete).toHaveBeenCalledWith({ where: { id: BM_ID } });
+    expect(prisma.bookmark.findFirst).toHaveBeenCalledWith({
+      where: { id: BM_ID, ownerId: OWNER_A },
+    });
+    expect(prisma.bookmark.delete).toHaveBeenCalledWith({
+      where: { id: BM_ID },
+    });
   });
 });
 
 describe('BookmarksService — adversarial (owner B tries to access owner A data)', () => {
-  const prismaNotFound = makePrisma({ findFirst: jest.fn().mockResolvedValue(null) });
+  const prismaNotFound = makePrisma({
+    findFirst: jest.fn().mockResolvedValue(null),
+  });
 
   it('getOne throws NotFoundException — not 403 — so existence is not revealed', async () => {
     const service = new BookmarksService(prismaNotFound);
-    await expect(service.getOne(BM_ID, OWNER_B)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getOne(BM_ID, OWNER_B)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('replace throws 404 when ownerId does not match', async () => {
     const service = new BookmarksService(prismaNotFound);
     await expect(
-      service.replace(BM_ID, OWNER_B, { url: 'https://hack.com', title: 'Hack' }),
+      service.replace(BM_ID, OWNER_B, {
+        url: 'https://hack.com',
+        title: 'Hack',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('patch throws 404 when ownerId does not match', async () => {
     const service = new BookmarksService(prismaNotFound);
-    await expect(service.patch(BM_ID, OWNER_B, { title: 'Hack' })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.patch(BM_ID, OWNER_B, { title: 'Hack' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('remove throws 404 when ownerId does not match', async () => {
     const service = new BookmarksService(prismaNotFound);
-    await expect(service.remove(BM_ID, OWNER_B)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.remove(BM_ID, OWNER_B)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });
 
 describe('BookmarksService — cross-resource IDOR via collectionId', () => {
   const colNotOwned = jest.fn().mockResolvedValue(null);
-  const colOwned = jest.fn().mockResolvedValue({ id: COL_ID, ownerId: OWNER_A });
+  const colOwned = jest
+    .fn()
+    .mockResolvedValue({ id: COL_ID, ownerId: OWNER_A });
 
-  it('create with another user\'s collectionId throws 404', async () => {
+  it("create with another user's collectionId throws 404", async () => {
     const prisma = makePrisma({}, { findFirst: colNotOwned });
     const service = new BookmarksService(prisma);
     await expect(
-      service.create(OWNER_A, { url: 'https://x.com', title: 'X', collectionId: 'other-col' }),
+      service.create(OWNER_A, {
+        url: 'https://x.com',
+        title: 'X',
+        collectionId: 'other-col',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.bookmark.create).not.toHaveBeenCalled();
   });
 
-  it('patch changing collectionId to another user\'s collection throws 404', async () => {
+  it("patch changing collectionId to another user's collection throws 404", async () => {
     const prisma = makePrisma({}, { findFirst: colNotOwned });
     const service = new BookmarksService(prisma);
     await expect(
@@ -163,7 +196,11 @@ describe('BookmarksService — cross-resource IDOR via collectionId', () => {
   it('create with own collectionId succeeds (regression)', async () => {
     const prisma = makePrisma({}, { findFirst: colOwned });
     const service = new BookmarksService(prisma);
-    await service.create(OWNER_A, { url: 'https://x.com', title: 'X', collectionId: COL_ID });
+    await service.create(OWNER_A, {
+      url: 'https://x.com',
+      title: 'X',
+      collectionId: COL_ID,
+    });
     expect(prisma.bookmark.create).toHaveBeenCalled();
   });
 

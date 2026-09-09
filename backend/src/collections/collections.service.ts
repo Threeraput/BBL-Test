@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
-import { PatchCollectionDto, UpdateCollectionDto } from './dto/update-collection.dto';
+import {
+  PatchCollectionDto,
+  UpdateCollectionDto,
+} from './dto/update-collection.dto';
 
 @Injectable()
 export class CollectionsService {

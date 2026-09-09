@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+} from 'class-validator';
 
 export class UpdateBookmarkDto {
   @IsString()

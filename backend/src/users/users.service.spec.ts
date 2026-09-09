@@ -1,5 +1,8 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { type AuthService, type VerifiedAccessTokenPayload } from '../auth/auth.service';
+import {
+  type AuthService,
+  type VerifiedAccessTokenPayload,
+} from '../auth/auth.service';
 import { type PrismaService } from '../prisma.service';
 import { UsersService } from './users.service';
 
@@ -17,7 +20,9 @@ const discoveryDocument = {
   userinfo_endpoint: 'https://dev-yg.us.auth0.com/userinfo',
 };
 
-const makePayload = (overrides: Partial<VerifiedAccessTokenPayload> = {}): VerifiedAccessTokenPayload => ({
+const makePayload = (
+  overrides: Partial<VerifiedAccessTokenPayload> = {},
+): VerifiedAccessTokenPayload => ({
   iss: discoveryDocument.issuer,
   sub: 'google-oauth2|123',
   aud: 'https://bbl-candidate-test-api',
@@ -48,7 +53,10 @@ describe('UsersService', () => {
 
   describe('payload มี email และ name', () => {
     it('upsert ด้วยข้อมูลจาก payload โดยตรง ไม่เรียก /userinfo', async () => {
-      const payload = makePayload({ email: 'user@example.com', name: 'Test User' });
+      const payload = makePayload({
+        email: 'user@example.com',
+        name: 'Test User',
+      });
 
       await service.upsertFromToken(payload, 'raw-token');
 
@@ -56,7 +64,11 @@ describe('UsersService', () => {
       expect(upsert).toHaveBeenCalledWith({
         where: { id: 'google-oauth2|123' },
         update: { email: 'user@example.com', name: 'Test User' },
-        create: { id: 'google-oauth2|123', email: 'user@example.com', name: 'Test User' },
+        create: {
+          id: 'google-oauth2|123',
+          email: 'user@example.com',
+          name: 'Test User',
+        },
       });
     });
   });
@@ -72,7 +84,7 @@ describe('UsersService', () => {
           email: 'from-userinfo@example.com',
           name: 'From UserInfo',
         }),
-      } as Response);
+      });
 
       await service.upsertFromToken(payload, 'raw-token');
 
@@ -85,7 +97,11 @@ describe('UsersService', () => {
       expect(upsert).toHaveBeenCalledWith({
         where: { id: 'google-oauth2|123' },
         update: { email: 'from-userinfo@example.com', name: 'From UserInfo' },
-        create: { id: 'google-oauth2|123', email: 'from-userinfo@example.com', name: 'From UserInfo' },
+        create: {
+          id: 'google-oauth2|123',
+          email: 'from-userinfo@example.com',
+          name: 'From UserInfo',
+        },
       });
     });
 
@@ -95,11 +111,11 @@ describe('UsersService', () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 401,
-      } as Response);
+      });
 
-      await expect(service.upsertFromToken(payload, 'bad-token')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.upsertFromToken(payload, 'bad-token'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('throw UnauthorizedException ถ้า discovery ไม่มี userinfo_endpoint', async () => {
@@ -111,9 +127,9 @@ describe('UsersService', () => {
         // userinfo_endpoint หายไป
       });
 
-      await expect(service.upsertFromToken(payload, 'raw-token')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.upsertFromToken(payload, 'raw-token'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 
@@ -123,30 +139,45 @@ describe('UsersService', () => {
 
       fetchSpy.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ sub: 'google-oauth2|123', email: 'ignored@example.com', name: 'From UserInfo' }),
-      } as Response);
+        json: async () => ({
+          sub: 'google-oauth2|123',
+          email: 'ignored@example.com',
+          name: 'From UserInfo',
+        }),
+      });
 
       await service.upsertFromToken(payload, 'raw-token');
 
       expect(upsert).toHaveBeenCalledWith({
         where: { id: 'google-oauth2|123' },
         update: { email: 'from-payload@example.com', name: 'From UserInfo' },
-        create: { id: 'google-oauth2|123', email: 'from-payload@example.com', name: 'From UserInfo' },
+        create: {
+          id: 'google-oauth2|123',
+          email: 'from-payload@example.com',
+          name: 'From UserInfo',
+        },
       });
     });
   });
 
   describe('upsert ซ้ำด้วย sub เดิม', () => {
     it('เรียก prisma.upsert ครั้งที่ 2 ด้วย sub เดิม ต้อง update ไม่สร้างใหม่', async () => {
-      const payload = makePayload({ email: 'user@example.com', name: 'Test User' });
+      const payload = makePayload({
+        email: 'user@example.com',
+        name: 'Test User',
+      });
 
       await service.upsertFromToken(payload, 'raw-token');
       await service.upsertFromToken(payload, 'raw-token');
 
       // upsert ถูกเรียก 2 ครั้งด้วย where: { id: sub เดิม }
       expect(upsert).toHaveBeenCalledTimes(2);
-      expect(upsert.mock.calls[0][0].where).toEqual({ id: 'google-oauth2|123' });
-      expect(upsert.mock.calls[1][0].where).toEqual({ id: 'google-oauth2|123' });
+      expect(upsert.mock.calls[0][0].where).toEqual({
+        id: 'google-oauth2|123',
+      });
+      expect(upsert.mock.calls[1][0].where).toEqual({
+        id: 'google-oauth2|123',
+      });
     });
   });
 });

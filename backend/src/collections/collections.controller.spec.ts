@@ -21,18 +21,42 @@ const mockCollection = {
   updatedAt: new Date(),
 };
 
-const mockPayload = { iss: 'https://dev-yg.us.auth0.com/', sub: OWNER_A, aud: 'https://bbl-candidate-test-api' };
+const mockPayload = {
+  iss: 'https://dev-yg.us.auth0.com/',
+  sub: OWNER_A,
+  aud: 'https://bbl-candidate-test-api',
+};
 
 // Build app with real AuthGuard but stubbed AuthService — for unauthenticated tests
-const emptyBookmarksSvc = (): Partial<BookmarksService> => ({ list: jest.fn() });
+const emptyBookmarksSvc = (): Partial<BookmarksService> => ({
+  list: jest.fn(),
+});
 
-async function buildHttpApp(serviceOverrides: Partial<CollectionsService> = {}): Promise<INestApplication> {
+async function buildHttpApp(
+  serviceOverrides: Partial<CollectionsService> = {},
+): Promise<INestApplication> {
   const module: TestingModule = await Test.createTestingModule({
     controllers: [CollectionsController],
     providers: [
-      { provide: CollectionsService, useValue: { list: jest.fn(), getOne: jest.fn(), create: jest.fn(), replace: jest.fn(), patch: jest.fn(), remove: jest.fn(), ...serviceOverrides } },
+      {
+        provide: CollectionsService,
+        useValue: {
+          list: jest.fn(),
+          getOne: jest.fn(),
+          create: jest.fn(),
+          replace: jest.fn(),
+          patch: jest.fn(),
+          remove: jest.fn(),
+          ...serviceOverrides,
+        },
+      },
       { provide: BookmarksService, useValue: emptyBookmarksSvc() },
-      { provide: AuthService, useValue: { verifyAccessToken: jest.fn().mockRejectedValue(new Error('no token')) } },
+      {
+        provide: AuthService,
+        useValue: {
+          verifyAccessToken: jest.fn().mockRejectedValue(new Error('no token')),
+        },
+      },
       AuthGuard,
     ],
   }).compile();
@@ -50,8 +74,22 @@ async function buildControllerModule(
   const module: TestingModule = await Test.createTestingModule({
     controllers: [CollectionsController],
     providers: [
-      { provide: CollectionsService, useValue: { list: jest.fn(), getOne: jest.fn(), create: jest.fn(), replace: jest.fn(), patch: jest.fn(), remove: jest.fn(), ...serviceOverrides } },
-      { provide: BookmarksService, useValue: { ...emptyBookmarksSvc(), ...bookmarksOverrides } },
+      {
+        provide: CollectionsService,
+        useValue: {
+          list: jest.fn(),
+          getOne: jest.fn(),
+          create: jest.fn(),
+          replace: jest.fn(),
+          patch: jest.fn(),
+          remove: jest.fn(),
+          ...serviceOverrides,
+        },
+      },
+      {
+        provide: BookmarksService,
+        useValue: { ...emptyBookmarksSvc(), ...bookmarksOverrides },
+      },
     ],
   })
     .overrideGuard(AuthGuard)
@@ -62,7 +100,9 @@ async function buildControllerModule(
 }
 
 const makeRequest = (subject = OWNER_A): AuthenticatedRequest =>
-  ({ auth: { token: 'tok', subject, payload: mockPayload } }) as AuthenticatedRequest;
+  ({
+    auth: { token: 'tok', subject, payload: mockPayload },
+  }) as AuthenticatedRequest;
 
 // ─── Happy path ───────────────────────────────────────────────────────────────
 
@@ -121,7 +161,9 @@ describe('CollectionsController — happy path', () => {
   it('listBookmarks returns 404 when collection belongs to another user', async () => {
     const getOne = jest.fn().mockRejectedValue(new NotFoundException());
     const ctrl = await buildControllerModule({ getOne });
-    await expect(ctrl.listBookmarks('col-1', makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      ctrl.listBookmarks('col-1', makeRequest('user-b')),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
@@ -131,26 +173,34 @@ describe('CollectionsController — adversarial (owner B uses owner A id)', () =
   it('getOne returns 404 not 403 when record belongs to another user', async () => {
     const getOne = jest.fn().mockRejectedValue(new NotFoundException());
     const ctrl = await buildControllerModule({ getOne });
-    await expect(ctrl.getOne('col-1', makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      ctrl.getOne('col-1', makeRequest('user-b')),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(getOne).toHaveBeenCalledWith('col-1', 'user-b');
   });
 
   it('replace returns 404 for another user collection', async () => {
     const replace = jest.fn().mockRejectedValue(new NotFoundException());
     const ctrl = await buildControllerModule({ replace });
-    await expect(ctrl.replace('col-1', { name: 'Hack' }, makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      ctrl.replace('col-1', { name: 'Hack' }, makeRequest('user-b')),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('patch returns 404 for another user collection', async () => {
     const patch = jest.fn().mockRejectedValue(new NotFoundException());
     const ctrl = await buildControllerModule({ patch });
-    await expect(ctrl.patch('col-1', { name: 'Hack' }, makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      ctrl.patch('col-1', { name: 'Hack' }, makeRequest('user-b')),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('remove returns 404 for another user collection', async () => {
     const remove = jest.fn().mockRejectedValue(new NotFoundException());
     const ctrl = await buildControllerModule({ remove });
-    await expect(ctrl.remove('col-1', makeRequest('user-b'))).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      ctrl.remove('col-1', makeRequest('user-b')),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
@@ -159,8 +209,12 @@ describe('CollectionsController — adversarial (owner B uses owner A id)', () =
 describe('CollectionsController — unauthenticated → HTTP 401', () => {
   let app: INestApplication;
 
-  beforeEach(async () => { app = await buildHttpApp(); });
-  afterEach(async () => { await app.close(); });
+  beforeEach(async () => {
+    app = await buildHttpApp();
+  });
+  afterEach(async () => {
+    await app.close();
+  });
 
   it('GET /collections without token → 401', async () => {
     await supertest(app.getHttpServer()).get('/collections').expect(401);
@@ -171,18 +225,29 @@ describe('CollectionsController — unauthenticated → HTTP 401', () => {
   });
 
   it('POST /collections without token → 401', async () => {
-    await supertest(app.getHttpServer()).post('/collections').send({ name: 'x' }).expect(401);
+    await supertest(app.getHttpServer())
+      .post('/collections')
+      .send({ name: 'x' })
+      .expect(401);
   });
 
   it('PUT /collections/:id without token → 401', async () => {
-    await supertest(app.getHttpServer()).put('/collections/col-1').send({ name: 'x' }).expect(401);
+    await supertest(app.getHttpServer())
+      .put('/collections/col-1')
+      .send({ name: 'x' })
+      .expect(401);
   });
 
   it('PATCH /collections/:id without token → 401', async () => {
-    await supertest(app.getHttpServer()).patch('/collections/col-1').send({ name: 'x' }).expect(401);
+    await supertest(app.getHttpServer())
+      .patch('/collections/col-1')
+      .send({ name: 'x' })
+      .expect(401);
   });
 
   it('DELETE /collections/:id without token → 401', async () => {
-    await supertest(app.getHttpServer()).delete('/collections/col-1').expect(401);
+    await supertest(app.getHttpServer())
+      .delete('/collections/col-1')
+      .expect(401);
   });
 });

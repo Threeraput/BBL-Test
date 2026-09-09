@@ -53,7 +53,9 @@ export class UsersService {
       },
     });
 
-    console.log(`[UsersService] upserted user: id=${user.id}, email=${user.email}`);
+    console.log(
+      `[UsersService] upserted user: id=${user.id}, email=${user.email}`,
+    );
 
     return user;
   }

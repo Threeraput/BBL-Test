@@ -108,7 +108,6 @@ describe('AuthService (unit tests with mocks)', () => {
   });
 
   it('should return the verified payload when the token is valid', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedJwtVerify.mockResolvedValueOnce(verifiedPayload as any);
 
     const result = await service.verifyAccessToken('valid-token');

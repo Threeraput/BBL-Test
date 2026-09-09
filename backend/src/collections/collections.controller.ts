@@ -16,7 +16,10 @@ import { type AuthenticatedRequest } from '../auth/auth.types';
 import { BookmarksService } from '../bookmarks/bookmarks.service';
 import { CollectionsService } from './collections.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
-import { PatchCollectionDto, UpdateCollectionDto } from './dto/update-collection.dto';
+import {
+  PatchCollectionDto,
+  UpdateCollectionDto,
+} from './dto/update-collection.dto';
 
 @UseGuards(AuthGuard)
 @Controller('collections')
@@ -62,9 +65,9 @@ export class CollectionsController {
   @Get(':id/bookmarks')
   listBookmarks(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     // Verify collection ownership then filter bookmarks by both ownerId and collectionId
-    return this.collectionsService.getOne(id, req.auth!.subject).then(() =>
-      this.bookmarksService.list(req.auth!.subject, id),
-    );
+    return this.collectionsService
+      .getOne(id, req.auth!.subject)
+      .then(() => this.bookmarksService.list(req.auth!.subject, id));
   }
 
   @Delete(':id')

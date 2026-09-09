@@ -34,7 +34,8 @@ export class BookmarksService {
   }
 
   async create(ownerId: string, dto: CreateBookmarkDto) {
-    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
+    if (dto.collectionId)
+      await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.create({
       data: {
         url: dto.url,
@@ -48,7 +49,8 @@ export class BookmarksService {
 
   async replace(id: string, ownerId: string, dto: UpdateBookmarkDto) {
     await this.getOne(id, ownerId);
-    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
+    if (dto.collectionId)
+      await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.update({
       where: { id },
       data: {
@@ -62,14 +64,17 @@ export class BookmarksService {
 
   async patch(id: string, ownerId: string, dto: PatchBookmarkDto) {
     await this.getOne(id, ownerId);
-    if (dto.collectionId) await this.assertCollectionOwner(dto.collectionId, ownerId);
+    if (dto.collectionId)
+      await this.assertCollectionOwner(dto.collectionId, ownerId);
     return this.prisma.bookmark.update({
       where: { id },
       data: {
         ...(dto.url !== undefined && { url: dto.url }),
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
-        ...(dto.collectionId !== undefined && { collectionId: dto.collectionId }),
+        ...(dto.collectionId !== undefined && {
+          collectionId: dto.collectionId,
+        }),
       },
     });
   }
