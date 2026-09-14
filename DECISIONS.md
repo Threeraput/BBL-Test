@@ -21,7 +21,7 @@ Use **jose** (npm:jose v6+) as the JWT validation library with `createRemoteJWKS
 
 3. **Automatic key rotation** — The jose library caches JWKS but auto-refreshes when a new `kid` isn't found. Auth0 can rotate keys without requiring our deployment.
 
-4. **Live discovery** — We fetch Auth0's `.well-known/openid-configuration` on startup and cache it. If Auth0 ever changes their jwks_uri or issuer, we pick it up automatically (without hardcoding). This satisfies the SPEC requirement: "verify. Inspect the tenant's discovery document and JWKS to determine which flows, tokens, and signing algorithms are actually available before committing to a design."
+4. **Live discovery** — We fetch Auth0's `.well-known/openid-configuration` on first authentication-related use and cache it for subsequent requests. If Auth0 ever changes their jwks_uri or issuer, we pick it up automatically (without hardcoding). This satisfies the SPEC requirement: "verify. Inspect the tenant's discovery document and JWKS to determine which flows, tokens, and signing algorithms are actually available before committing to a design."
 
 5. **Test coverage** — Easy to mock jose in unit tests (4 test cases in `auth.service.spec.ts`). Easy to verify real discovery + JWKS path in integration test (`auth.service.integration.spec.ts`). Proves both the happy path and error cases work.
 
@@ -61,7 +61,7 @@ verifying via PKCE flow before the frontend exists.
 **Decision:** Implemented defensively — check token payload first, fall
 back to calling the /userinfo endpoint with the access token if profile
 claims are absent. Verified end-to-end once the frontend PKCE flow was
-built (see commit <fill in later>).
+built.
 **Trade-off:** One extra network call on first login if the fallback path
 is the one actually used; negligible for this app's scale.
 
@@ -172,8 +172,9 @@ unless the filter dropdown state makes it clear.
 **Decision:** 
 1. Enabled explicit CORS in NestJS `main.ts` with origins `['http://localhost:3000', 'http://127.0.0.1:3000']`, credentials, and standard HTTP methods.
 2. Decorated all DTOs (`CreateCollectionDto`, `CreateBookmarkDto`, `UpdateBookmarkDto`) with `class-validator` annotations (`@IsString()`, `@IsNotEmpty()`, `@IsOptional()`).
-3. Added a frontend URL normalizer `formatUrl()` in `Bookmarks.tsx` while keeping backend validation as `@IsString()` + `@IsNotEmpty()`.
-**Rationale:** Enforces strict whitelist validation without rejecting valid domain inputs (e.g. `localhost`, IP addresses, or inputs missing explicit `https://` schemes).
+3. Added a frontend URL normalizer `formatUrl()` in `Bookmarks.tsx` while keeping backend URL validation at the basic `@IsString()` + `@IsNotEmpty()` level.
+**Rationale:** Enforces strict DTO whitelisting while allowing practical inputs such as `localhost`, IP addresses, or domains without an explicit `https://` scheme. The frontend prepends `https://` before saving so normalized bookmarks are clickable.
+**Known limitation:** The backend currently does not perform semantic URL validation, so non-empty text that is not a real URL can still be accepted through direct API calls. Existing invalid bookmark values are not automatically migrated or deleted.
 
 ## Docker Containerization (§ Optional Bonus) — Scope Decision
 
@@ -181,4 +182,4 @@ unless the filter dropdown state makes it clear.
 **Decision:** Not implementing Docker containerization in this submission.
 **Rationale:** Allocated available project time strictly toward perfecting the non-negotiable core requirements: Auth0 PKCE token verification, single-owner row-level access control via Prisma, 404 privacy leak prevention, and comprehensive UI state management. Given limited familiarity with Docker multi-stage builds and Nginx SPA routing, attempting to containerize without deep experience introduced unnecessary risk of misconfiguring security headers, environment variables, or Auth0 callback endpoints.
 **Trade-off:** The application must be launched directly on local Node.js environments (`npm run start:dev` for backend, `npm run dev` for frontend) rather than instantiated via `docker-compose up`.
-
+
